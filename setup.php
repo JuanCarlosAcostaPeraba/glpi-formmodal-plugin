@@ -74,7 +74,7 @@ function plugin_version_formmodal()
         'version' => PLUGIN_FORMMODAL_VERSION,
         'author' => '<a href="mailto:juancarlos.ap.dev@gmail.com">Juan Carlos Acosta Perabá</a>',
         'license' => 'GPLv3+',
-        'homepage' => 'https://github.com/your-repo/formmodal',
+        'homepage' => 'https://github.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin',
         'requirements' => [
             'glpi' => [
                 'min' => PLUGIN_FORMMODAL_MIN_GLPI,
@@ -92,7 +92,8 @@ function plugin_version_formmodal()
  */
 function plugin_formmodal_check_prerequisites()
 {
-    if (version_compare(GLPI_VERSION, PLUGIN_FORMMODAL_MIN_GLPI, 'lt')
+    if (
+        version_compare(GLPI_VERSION, PLUGIN_FORMMODAL_MIN_GLPI, 'lt')
         || version_compare(GLPI_VERSION, PLUGIN_FORMMODAL_MAX_GLPI, 'ge')
     ) {
         if (method_exists('Plugin', 'messageIncompatible')) {
@@ -209,4 +210,3 @@ function plugin_formmodal_uninstall()
 
     return true;
 }
-

@@ -45,11 +45,11 @@ Desarrollado para uso real en el **Hospital Universitario de Canarias (HUC)**.
 		</long>
 	</description>
 
-	<homepage>https://github.com/your-repo/formmodal</homepage>
+	<homepage>https://github.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin</homepage>
 
-	<download>https://github.com/your-repo/formmodal/releases</download>
-	<issues>https://github.com/your-repo/formmodal/issues</issues>
-	<readme>https://raw.githubusercontent.com/your-repo/formmodal/main/README.md</readme>
+	<download>https://github.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin/releases</download>
+	<issues>https://github.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin/issues</issues>
+	<readme>https://raw.githubusercontent.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin/main/README.md</readme>
 
 	<authors>
 		<author>Juan Carlos Acosta Perabá</author>
