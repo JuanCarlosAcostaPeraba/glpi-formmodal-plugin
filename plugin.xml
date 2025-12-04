@@ -5,6 +5,9 @@
 	<!-- stable | unstable | beta | alpha -->
 	<state>stable</state>
 
+	<!-- 40x40px or bigger. Marketplace will resize it. -->
+	<logo>https://raw.githubusercontent.com/JuanCarlosAcostaPeraba/glpi-formmodal-plugin/main/assets/logo.png</logo>
+
 	<description>
 		<short>
 			<en>Display custom modal messages after form submissions in GLPI.</en>
