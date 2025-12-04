@@ -22,7 +22,7 @@
  * -------------------------------------------------------------------------
  */
 
-(function() {
+(function () {
     'use strict';
 
     // Get plugin configurations
@@ -30,10 +30,16 @@
 
     // Function to load configurations from backend
     function loadConfigurations() {
-        const pluginRoot = '../plugins/formmodal';
-        
-        fetch(pluginRoot + '/ajax/get_configs.php')
-            .then(response => response.json())
+        // Usar ruta absoluta desde la raíz de GLPI
+        const ajaxUrl = '/plugins/formmodal/ajax/get_configs.php';
+
+        fetch(ajaxUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success && Array.isArray(data.configs)) {
                     formModalConfigs = data.configs;
@@ -108,15 +114,26 @@
 
     // Function to check if form should trigger modal
     function checkFormSubmit(form) {
-        const formId = form.id || form.getAttribute('data-form-id') || form.getAttribute('name');
-        
-        if (!formId) {
-            return;
+        // Obtener IDs posibles del formulario
+        const htmlFormId = form.id || form.getAttribute('data-form-id') || form.getAttribute('name');
+
+        // Obtener el ID del parámetro de URL (para FormCreator y otros plugins)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlFormId = urlParams.get('id');
+
+        // Buscar configuración que coincida con el ID de la URL o el ID del HTML
+        let config = null;
+
+        // Primero intentar con el ID de la URL (prioridad para FormCreator y similares)
+        if (urlFormId) {
+            config = formModalConfigs.find(c => c.form_id === urlFormId);
         }
 
-        // Find matching configuration
-        const config = formModalConfigs.find(c => c.form_id === formId);
-        
+        // Si no se encontró por URL, intentar con el ID del HTML
+        if (!config && htmlFormId) {
+            config = formModalConfigs.find(c => c.form_id === htmlFormId);
+        }
+
         if (config && config.message) {
             // Store the configuration to show after submission
             sessionStorage.setItem('formmodal_pending', JSON.stringify(config));
@@ -126,12 +143,12 @@
     // Function to show pending modal after page load (after redirect)
     function checkPendingModal() {
         const pending = sessionStorage.getItem('formmodal_pending');
-        
+
         if (pending) {
             try {
                 const config = JSON.parse(pending);
                 sessionStorage.removeItem('formmodal_pending');
-                
+
                 // Show modal after a short delay to ensure page is fully loaded
                 setTimeout(() => {
                     showFormModal(config.message);
@@ -146,7 +163,7 @@
     // Initialize form listeners
     function initFormListeners() {
         // Listen to all form submissions
-        document.addEventListener('submit', function(e) {
+        document.addEventListener('submit', function (e) {
             const form = e.target;
             if (form.tagName === 'FORM') {
                 checkFormSubmit(form);
@@ -155,7 +172,7 @@
 
         // Also listen to AJAX form submissions (if using GLPI's AJAX system)
         const originalFetch = window.fetch;
-        window.fetch = function(...args) {
+        window.fetch = function (...args) {
             return originalFetch.apply(this, args).then(response => {
                 // Check if this was a form submission
                 if (args[0] && typeof args[0] === 'string') {
