@@ -137,12 +137,8 @@ class PluginFormmodalConfig extends CommonDBTM
             return false;
         }
 
-        // Clean message - compatible con GLPI 10
+        // El mensaje viene del editor HTML, lo guardamos tal cual
         $message = $input['message'];
-        if (method_exists('Html', 'cleanPostForTextArea')) {
-            $message = Html::cleanPostForTextArea($message);
-        }
-        
         $form_id = $input['form_id'];
         $is_active = isset($input['is_active']) ? (int)$input['is_active'] : 1;
 
@@ -190,12 +186,8 @@ class PluginFormmodalConfig extends CommonDBTM
             return false;
         }
 
-        // Clean message - compatible con GLPI 10
+        // El mensaje viene del editor HTML, lo guardamos tal cual
         $message = $input['message'];
-        if (method_exists('Html', 'cleanPostForTextArea')) {
-            $message = Html::cleanPostForTextArea($message);
-        }
-        
         $form_id = $input['form_id'];
         $is_active = isset($input['is_active']) ? (int)$input['is_active'] : 1;
 

@@ -51,8 +51,18 @@
             });
     }
 
+    // Function to decode HTML entities
+    function decodeHtmlEntities(text) {
+        const textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+    }
+
     // Function to show modal with message
     function showFormModal(message) {
+        // Decode HTML entities to show proper HTML
+        const decodedMessage = decodeHtmlEntities(message);
+
         // Create modal overlay
         const overlay = document.createElement('div');
         overlay.className = 'formmodal-overlay';
@@ -68,7 +78,7 @@
                     </button>
                 </div>
                 <div class="formmodal-body">
-                    ${message}
+                    ${decodedMessage}
                 </div>
                 <div class="formmodal-footer">
                     <button class="formmodal-btn formmodal-btn-primary">
