@@ -1,0 +1,93 @@
+<root>
+	<name>Form Modal Messages</name>
+	<key>formmodal</key>
+
+	<!-- stable | unstable | beta | alpha -->
+	<state>stable</state>
+
+	<description>
+		<short>
+			<en>Display custom modal messages after form submissions in GLPI.</en>
+			<es_ES>Mostrar mensajes modales personalizados tras el envío de formularios en GLPI.</es_ES>
+		</short>
+		<long>
+			<en><![CDATA[
+**Form Modal Messages** allows administrators to configure custom modal messages that appear after specific forms are submitted.
+
+It automatically adds:
+
+- **Custom modal dialogs** after form submission
+- **Rich text editor** for message formatting
+- **Per-form configuration** (target specific forms by ID)
+- **Enable/disable toggle** for each configuration
+- **Modern, responsive modal** with smooth animations
+
+Designed to improve user communication and provide important information after form submissions.
+
+Developed for real-world usage at the **Hospital Universitario de Canarias (HUC)**.
+			]]></en>
+
+			<es_ES><![CDATA[
+**Form Modal Messages** permite a los administradores configurar mensajes modales personalizados que aparecen después de enviar formularios específicos.
+
+Añade automáticamente:
+
+- **Diálogos modales personalizados** tras el envío de formularios
+- **Editor de texto enriquecido** para formatear mensajes
+- **Configuración por formulario** (dirigir formularios específicos por ID)
+- **Activar/desactivar** cada configuración
+- **Modal moderno y responsive** con animaciones suaves
+
+Diseñado para mejorar la comunicación con usuarios y proporcionar información importante tras envíos de formularios.
+
+Desarrollado para uso real en el **Hospital Universitario de Canarias (HUC)**.
+			]]></es_ES>
+		</long>
+	</description>
+
+	<homepage>https://github.com/your-repo/formmodal</homepage>
+
+	<download>https://github.com/your-repo/formmodal/releases</download>
+	<issues>https://github.com/your-repo/formmodal/issues</issues>
+	<readme>https://raw.githubusercontent.com/your-repo/formmodal/main/README.md</readme>
+
+	<authors>
+		<author>Juan Carlos Acosta Perabá</author>
+	</authors>
+
+	<versions>
+		<version>
+			<num>1.0.0</num>
+			<compatibility>>=10.0.0 <11.0.99</compatibility>
+		</version>
+	</versions>
+
+	<langs>
+		<lang>en_GB</lang>
+		<lang>es_ES</lang>
+	</langs>
+
+	<license>GPL v3+</license>
+
+	<tags>
+		<en>
+			<tag>forms</tag>
+			<tag>modal</tag>
+			<tag>messages</tag>
+			<tag>ui-enhancement</tag>
+			<tag>notifications</tag>
+			<tag>glpi</tag>
+			<tag>plugin</tag>
+		</en>
+		<es_ES>
+			<tag>formularios</tag>
+			<tag>modal</tag>
+			<tag>mensajes</tag>
+			<tag>notificaciones</tag>
+			<tag>glpi</tag>
+			<tag>plugin</tag>
+		</es_ES>
+	</tags>
+
+</root>
+
