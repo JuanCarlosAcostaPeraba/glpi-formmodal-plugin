@@ -334,32 +334,40 @@
                     intervalCheck = null;
                 }
 
-                console.log('FormModal: Success message or ticket link detected in DOM');
-
-                // Extract ticket ID from link if available
-                let ticketId = null;
-                if (ticketLinks.length > 0) {
-                    const href = ticketLinks[0].getAttribute('href');
-                    const match = href.match(/id=(\d+)/);
-                    if (match) {
-                        ticketId = match[1];
-                        console.log('FormModal: Found ticket ID in DOM:', ticketId);
+                // Use requestAnimationFrame to process asynchronously and ensure only one execution
+                requestAnimationFrame(() => {
+                    // Double-check one more time in case of race condition
+                    if (document.querySelector('.formmodal-overlay')) {
+                        return;
                     }
-                }
 
-                let message = config.message;
-                if (ticketId) {
-                    message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
-                    console.log('FormModal: Replaced ID_DE_INCIDENCIA with:', ticketId);
-                }
+                    console.log('FormModal: Success message or ticket link detected in DOM');
 
-                // Wait a bit for GLPI's message to fully appear
-                setTimeout(() => {
-                    console.log('FormModal: Showing modal after detecting success message');
-                    showFormModal(message);
-                    sessionStorage.removeItem('formmodal_pending');
-                    sessionStorage.removeItem('formmodal_current_config');
-                }, 1000);
+                    // Extract ticket ID from link if available
+                    let ticketId = null;
+                    if (ticketLinks.length > 0) {
+                        const href = ticketLinks[0].getAttribute('href');
+                        const match = href.match(/id=(\d+)/);
+                        if (match) {
+                            ticketId = match[1];
+                            console.log('FormModal: Found ticket ID in DOM:', ticketId);
+                        }
+                    }
+
+                    let message = config.message;
+                    if (ticketId) {
+                        message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+                        console.log('FormModal: Replaced ID_DE_INCIDENCIA with:', ticketId);
+                    }
+
+                    // Wait a bit for GLPI's message to fully appear
+                    setTimeout(() => {
+                        console.log('FormModal: Showing modal after detecting success message');
+                        showFormModal(message);
+                        sessionStorage.removeItem('formmodal_pending');
+                        sessionStorage.removeItem('formmodal_current_config');
+                    }, 1000);
+                });
             }
         });
 
