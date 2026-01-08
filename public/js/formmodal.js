@@ -288,12 +288,13 @@
 
         let observerActive = true;
         let modalShown = false;
+        let processing = false;
         let intervalCheck = null;
 
         // Create observer to watch for success messages
         const observer = new MutationObserver((mutations) => {
             // Early return checks - do these first to prevent any processing
-            if (modalShown || !observerActive) {
+            if (modalShown || !observerActive || processing) {
                 return;
             }
 
@@ -314,7 +315,13 @@
             const successMessages = document.querySelectorAll('.alert-success, .toast-success, [class*="success"]');
 
             if (ticketLinks.length > 0 || successMessages.length > 0) {
-                // Set flag IMMEDIATELY before any other processing to prevent race conditions
+                // Double-check flags after DOM query (race condition protection)
+                if (modalShown || processing) {
+                    return;
+                }
+
+                // Set flags IMMEDIATELY before any other processing to prevent race conditions
+                processing = true;
                 modalShown = true;
                 observerActive = false;
 
