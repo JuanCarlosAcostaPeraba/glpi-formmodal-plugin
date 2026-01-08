@@ -11,6 +11,8 @@ if (!defined('GLPI_ROOT')) {
     include('../../../inc/includes.php');
 }
 
+global $CFG_GLPI;
+
 Session::checkRight('config', UPDATE);
 
 // Handle form submissions
@@ -31,7 +33,7 @@ if (isset($_POST['add_config'])) {
     // Display page
     Html::header(
         __('Form Modal Messages', 'formmodal'),
-        $_SERVER['PHP_SELF'],
+        $CFG_GLPI['root_doc'] . '/plugins/formmodal/front/config.form.php',
         "config",
         "plugins"
     );
@@ -39,7 +41,7 @@ if (isset($_POST['add_config'])) {
     // Show add new button
     if (!isset($_GET['id'])) {
         echo "<div class='center' style='margin: 20px 0;'>";
-        echo "<a href='" . $_SERVER['PHP_SELF'] . "?id=0' class='btn btn-primary'>";
+        echo "<a href='" . $CFG_GLPI['root_doc'] . "/plugins/formmodal/front/config.form.php?id=0' class='btn btn-primary'>";
         echo "<i class='fas fa-plus'></i> " . __('Add new configuration', 'formmodal');
         echo "</a>";
         echo "</div>";
@@ -48,7 +50,7 @@ if (isset($_POST['add_config'])) {
     // Show form if ID is set
     if (isset($_GET['id'])) {
         PluginFormmodalConfig::showConfigForm($_GET['id']);
-        
+
         echo "<div class='center' style='margin-top: 20px;'>";
         echo "<a href='" . $CFG_GLPI['root_doc'] . "/plugins/formmodal/front/config.form.php' class='btn btn-secondary'>";
         echo "<i class='fas fa-arrow-left'></i> " . __('Back to list');

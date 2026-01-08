@@ -1,0 +1,257 @@
+/**
+ * -------------------------------------------------------------------------
+ * FormModal plugin for GLPI
+ * -------------------------------------------------------------------------
+ *
+ * LICENSE
+ *
+ * This file is part of FormModal.
+ *
+ * FormModal is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * FormModal is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with FormModal. If not, see <http://www.gnu.org/licenses/>.
+ * -------------------------------------------------------------------------
+ */
+
+/* Modal Overlay */
+.formmodal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    padding: 1rem;
+}
+
+.formmodal-overlay.formmodal-active {
+    opacity: 1;
+}
+
+/* Modal Container */
+.formmodal-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease-in-out;
+}
+
+.formmodal-overlay.formmodal-active .formmodal-container {
+    transform: scale(1) translateY(0);
+}
+
+/* Modal Header */
+.formmodal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.formmodal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.formmodal-title i {
+    font-size: 1.5rem;
+    color: #3b82f6;
+}
+
+.formmodal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.formmodal-close:hover {
+    background-color: #f3f4f6;
+}
+
+.formmodal-close i {
+    font-size: 1.25rem;
+    color: #6b7280;
+}
+
+/* Modal Body */
+.formmodal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.formmodal-body p {
+    margin: 0 0 1rem 0;
+}
+
+.formmodal-body p:last-child {
+    margin-bottom: 0;
+}
+
+.formmodal-body ul,
+.formmodal-body ol {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.formmodal-body strong {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.formmodal-body em {
+    font-style: italic;
+}
+
+.formmodal-body a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.formmodal-body a:hover {
+    text-decoration: underline;
+}
+
+/* Modal Footer */
+.formmodal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.formmodal-btn {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.formmodal-btn-primary {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.formmodal-btn-primary:hover {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.formmodal-btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .formmodal-container {
+        max-width: 100%;
+        border-radius: 0;
+        max-height: 100vh;
+    }
+
+    .formmodal-header,
+    .formmodal-body,
+    .formmodal-footer {
+        padding: 1rem;
+    }
+
+    .formmodal-title {
+        font-size: 1.125rem;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .formmodal-container {
+        background: #1f2937;
+    }
+
+    .formmodal-header {
+        border-bottom-color: #374151;
+    }
+
+    .formmodal-title {
+        color: #f9fafb;
+    }
+
+    .formmodal-close:hover {
+        background-color: #374151;
+    }
+
+    .formmodal-close i {
+        color: #9ca3af;
+    }
+
+    .formmodal-body {
+        color: #d1d5db;
+    }
+
+    .formmodal-body strong {
+        color: #f9fafb;
+    }
+
+    .formmodal-footer {
+        border-top-color: #374151;
+    }
+}
+
+/* Accessibility */
+.formmodal-overlay:focus-within .formmodal-container {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.formmodal-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.formmodal-close:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+

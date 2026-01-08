@@ -12,8 +12,8 @@ Plugin para GLPI que permite mostrar mensajes personalizados en formato modal de
 
 ## 🔧 Requisitos
 
-- GLPI >= 10.0.0
-- PHP >= 7.4
+- GLPI >= 11.0.0
+- PHP >= 8.0
 - MySQL >= 5.7 / MariaDB >= 10.2
 
 ## 📦 Instalación
@@ -44,9 +44,11 @@ Para encontrar el ID del formulario:
 4. Anota el valor del atributo `id` o `name`
 
 Ejemplo:
+
 ```html
 <form id="ticket-form" method="post">
 ```
+
 El Form ID es: `ticket-form`
 
 ### 3. Ejemplo de mensaje
@@ -100,12 +102,12 @@ CREATE TABLE `glpi_plugin_formmodal_configs` (
 ```
 formmodal/
 ├── ajax/              # API endpoints
-├── css/               # Estilos
 ├── front/             # Interfaz
 ├── inc/               # Clases PHP
-├── js/                # JavaScript
 ├── locales/           # Traducciones
-├── sql/               # Scripts SQL
+├── public/            # Assets públicos (GLPI 11)
+│   ├── css/           # Estilos
+│   └── js/            # JavaScript
 └── setup.php          # Configuración
 ```
 
@@ -124,7 +126,14 @@ Las contribuciones son bienvenidas. Por favor:
 
 ## 📝 Changelog
 
+### v2.0.0 (2025-01-XX)
+
+- 🔄 Migración a GLPI 11
+- ⬆️ Actualización de requisitos: GLPI >= 11.0.0, PHP >= 8.0
+- ✨ Compatible con las nuevas APIs de GLPI 11
+
 ### v1.0.0 (2025-12-04)
+
 - ✨ Versión inicial
 - ✨ Configuración de mensajes por formulario
 - ✨ Editor de texto enriquecido

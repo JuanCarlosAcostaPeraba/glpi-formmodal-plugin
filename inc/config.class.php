@@ -274,7 +274,7 @@ class PluginFormmodalConfig extends CommonDBTM
                 echo "<tr class='tab_bg_1'>";
                 echo "<td>" . $data['id'] . "</td>";
                 echo "<td>" . $data['form_id'] . "</td>";
-                echo "<td>" . substr(Html::clean($data['message']), 0, 100) . "...</td>";
+                echo "<td>" . substr(htmlspecialchars(strip_tags($data['message'])), 0, 100) . "...</td>";
                 echo "<td>" . Dropdown::getYesNo($data['is_active']) . "</td>";
                 echo "<td>";
                 echo "<a href='" . $CFG_GLPI['root_doc'] . "/plugins/formmodal/front/config.form.php?id=" . $data['id'] . "' class='btn btn-sm btn-primary'>";
@@ -329,7 +329,7 @@ class PluginFormmodalConfig extends CommonDBTM
         echo "<div class='center'>";
         echo "<form name='form' method='post' action='" . $CFG_GLPI['root_doc'] . "/plugins/formmodal/front/config.form.php'>";
         echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
-        
+
         if ($id > 0) {
             echo Html::hidden('id', ['value' => $id]);
         }

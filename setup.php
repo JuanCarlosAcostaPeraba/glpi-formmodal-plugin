@@ -26,10 +26,10 @@
 
 use Glpi\Plugin\Hooks;
 
-define('PLUGIN_FORMMODAL_VERSION', '1.0.0');
+define('PLUGIN_FORMMODAL_VERSION', '2.0.0');
 
 // Minimal GLPI version, inclusive
-define('PLUGIN_FORMMODAL_MIN_GLPI', '10.0.0');
+define('PLUGIN_FORMMODAL_MIN_GLPI', '11.0.0');
 // Maximum GLPI version, exclusive
 define('PLUGIN_FORMMODAL_MAX_GLPI', '11.0.99');
 
@@ -53,8 +53,8 @@ function plugin_init_formmodal()
         Plugin::registerClass('PluginFormmodalConfig');
 
         // Add JavaScript and CSS files
-        $PLUGIN_HOOKS['add_javascript']['formmodal'][] = 'js/formmodal.js';
-        $PLUGIN_HOOKS['add_css']['formmodal'][] = 'css/formmodal.css';
+        $PLUGIN_HOOKS['add_javascript']['formmodal'][] = 'public/js/formmodal.js';
+        $PLUGIN_HOOKS['add_css']['formmodal'][] = 'public/css/formmodal.css';
 
         // Add config page
         $PLUGIN_HOOKS['config_page']['formmodal'] = 'front/config.form.php';
@@ -146,7 +146,7 @@ function plugin_formmodal_check_and_upgrade()
             KEY `is_active` (`is_active`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
 
-        $DB->query($query);
+        $DB->doQuery($query);
     }
 }
 
@@ -171,7 +171,7 @@ function plugin_formmodal_install()
         KEY `is_active` (`is_active`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
 
-    if (!$DB->query($query)) {
+    if (!$DB->doQuery($query)) {
         return false;
     }
 
@@ -194,7 +194,7 @@ function plugin_formmodal_uninstall()
     ];
 
     foreach ($tables as $table) {
-        $DB->query("DROP TABLE IF EXISTS `$table`");
+        $DB->doQuery("DROP TABLE IF EXISTS `$table`");
     }
 
     // Clean other GLPI tables
@@ -205,7 +205,9 @@ function plugin_formmodal_uninstall()
     ];
 
     foreach ($tables_glpi as $table_glpi) {
-        $DB->query("DELETE FROM `$table_glpi` WHERE `itemtype` = 'PluginFormmodalConfig'");
+        $DB->delete($table_glpi, [
+            'itemtype' => 'PluginFormmodalConfig'
+        ]);
     }
 
     return true;
