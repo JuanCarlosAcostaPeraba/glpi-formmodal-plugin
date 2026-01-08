@@ -292,7 +292,20 @@
 
         // Create observer to watch for success messages
         const observer = new MutationObserver((mutations) => {
+            // Early return checks - do these first to prevent any processing
             if (modalShown || !observerActive) {
+                return;
+            }
+
+            // Also check if modal already exists in DOM (double safety)
+            if (document.querySelector('.formmodal-overlay')) {
+                modalShown = true;
+                observerActive = false;
+                observer.disconnect();
+                if (intervalCheck) {
+                    clearInterval(intervalCheck);
+                    intervalCheck = null;
+                }
                 return;
             }
 
@@ -301,6 +314,19 @@
             const successMessages = document.querySelectorAll('.alert-success, .toast-success, [class*="success"]');
 
             if (ticketLinks.length > 0 || successMessages.length > 0) {
+                // Set flag IMMEDIATELY before any other processing to prevent race conditions
+                modalShown = true;
+                observerActive = false;
+
+                // Disconnect observer immediately
+                observer.disconnect();
+
+                // Stop interval check if it exists
+                if (intervalCheck) {
+                    clearInterval(intervalCheck);
+                    intervalCheck = null;
+                }
+
                 console.log('FormModal: Success message or ticket link detected in DOM');
 
                 // Extract ticket ID from link if available
@@ -312,17 +338,6 @@
                         ticketId = match[1];
                         console.log('FormModal: Found ticket ID in DOM:', ticketId);
                     }
-                }
-
-                // Show modal - set flag immediately to prevent duplicate triggers
-                modalShown = true;
-                observerActive = false;
-                observer.disconnect();
-
-                // Stop interval check if it exists
-                if (intervalCheck) {
-                    clearInterval(intervalCheck);
-                    intervalCheck = null;
                 }
 
                 let message = config.message;
