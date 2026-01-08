@@ -68,6 +68,13 @@
     function showFormModal(message) {
         console.log('FormModal: showFormModal called with message:', message);
 
+        // Check if modal already exists in DOM (prevent duplicates)
+        const existingModal = document.querySelector('.formmodal-overlay');
+        if (existingModal) {
+            console.log('FormModal: Modal already exists, skipping duplicate');
+            return;
+        }
+
         // Decode HTML entities to show proper HTML
         const decodedMessage = decodeHtmlEntities(message);
         console.log('FormModal: Decoded message:', decodedMessage);
@@ -281,6 +288,7 @@
 
         let observerActive = true;
         let modalShown = false;
+        let intervalCheck = null;
 
         // Create observer to watch for success messages
         const observer = new MutationObserver((mutations) => {
@@ -306,10 +314,16 @@
                     }
                 }
 
-                // Show modal
+                // Show modal - set flag immediately to prevent duplicate triggers
                 modalShown = true;
                 observerActive = false;
                 observer.disconnect();
+
+                // Stop interval check if it exists
+                if (intervalCheck) {
+                    clearInterval(intervalCheck);
+                    intervalCheck = null;
+                }
 
                 let message = config.message;
                 if (ticketId) {
@@ -336,15 +350,16 @@
         // Also check periodically as fallback
         let checkCount = 0;
         const maxChecks = 30; // Check for 15 seconds (30 * 500ms)
-        const intervalCheck = setInterval(() => {
+        intervalCheck = setInterval(() => {
             checkCount++;
 
             const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
             if (ticketLinks.length > 0 && !modalShown) {
                 console.log('FormModal: Ticket link found in periodic check');
+                // Set flag immediately to prevent duplicate
+                modalShown = true;
                 clearInterval(intervalCheck);
                 observer.disconnect();
-                modalShown = true;
 
                 const href = ticketLinks[0].getAttribute('href');
                 const match = href.match(/id=(\d+)/);
