@@ -120,6 +120,13 @@
         overlay.querySelector('.formmodal-btn-primary').addEventListener('click', closeModal);
     }
 
+    // Function to check if we're on a valid GLPI 11 form page
+    function isValidFormPage() {
+        const path = window.location.pathname;
+        // Only valid URLs are /Form/Render/... or /Form/SubmitAnswers/... or /Form/View/...
+        return path.includes('/Form/Render/') || path.includes('/Form/SubmitAnswers/') || path.includes('/Form/View/');
+    }
+
     // Function to extract form ID from URL path (GLPI 11 Form Creator format: /Form/Render/36)
     function extractFormIdFromPath() {
         const path = window.location.pathname;
@@ -133,6 +140,12 @@
 
     // Function to check if form should trigger modal
     function checkFormSubmit(form) {
+        // ONLY process if we're on a valid GLPI 11 form page
+        // This prevents false positives from other pages with IDs in the URL
+        if (!isValidFormPage()) {
+            return;
+        }
+
         // Obtener IDs posibles del formulario
         const htmlFormId = form.id || form.getAttribute('data-form-id') || form.getAttribute('name');
 
@@ -150,27 +163,19 @@
         // Buscar configuración que coincida con el ID de la URL o el ID del HTML
         let config = null;
 
-        // Primero intentar con el ID de la ruta (GLPI 11 Form Creator - PRIORIDAD)
-        if (pathFormId) {
-            config = formModalConfigs.find(c => c.form_id === pathFormId || c.form_id === String(pathFormId));
+        // PRIORIDAD 1: Buscar en campos ocultos del formulario (más confiable)
+        // Para FormCreator específicamente, buscar en campos ocultos del formulario
+        const hiddenInputs = form.querySelectorAll('input[type="hidden"]');
+        for (let i = 0; i < hiddenInputs.length; i++) {
+            const input = hiddenInputs[i];
+            if (input.name === 'formcreator_form' || input.name === 'id' || input.name === 'form_id' || input.name === 'forms_id') {
+                const formId = input.value;
+                config = formModalConfigs.find(c => c.form_id === formId || c.form_id === String(formId));
+                if (config) break;
+            }
         }
 
-        // Si no se encontró, intentar con el ID de la query string
-        if (!config && urlFormId) {
-            config = formModalConfigs.find(c => c.form_id === urlFormId || c.form_id === String(urlFormId));
-        }
-
-        // Si no se encontró, intentar con el hash
-        if (!config && hashFormId) {
-            config = formModalConfigs.find(c => c.form_id === hashFormId || c.form_id === String(hashFormId));
-        }
-
-        // Si no se encontró por URL, intentar con el ID del HTML
-        if (!config && htmlFormId) {
-            config = formModalConfigs.find(c => c.form_id === htmlFormId || c.form_id === String(htmlFormId));
-        }
-
-        // También intentar buscar por action o cualquier atributo relevante
+        // PRIORIDAD 2: Buscar por action URL (más confiable que URL genérica)
         if (!config && form.action) {
             const actionUrl = form.action;
             // Extraer ID de la acción también (puede ser /Form/SubmitAnswers/36)
@@ -178,21 +183,31 @@
             if (actionMatch) {
                 const actionFormId = actionMatch[1];
                 config = formModalConfigs.find(c => c.form_id === actionFormId || c.form_id === String(actionFormId));
-            } else {
-                config = formModalConfigs.find(c => actionUrl.includes(c.form_id));
             }
         }
 
-        // Para FormCreator específicamente, buscar en campos ocultos del formulario
-        if (!config) {
-            const hiddenInputs = form.querySelectorAll('input[type="hidden"]');
-            hiddenInputs.forEach(input => {
-                if (input.name === 'formcreator_form' || input.name === 'id' || input.name === 'form_id' || input.name === 'forms_id') {
-                    const formId = input.value;
-                    config = formModalConfigs.find(c => c.form_id === formId || c.form_id === String(formId));
-                }
-            });
+        // PRIORIDAD 3: Buscar por ID de la ruta (GLPI 11 Form Creator - solo si es ruta de formulario)
+        if (!config && pathFormId) {
+            // Solo usar pathFormId si estamos en una ruta de formulario GLPI 11
+            const path = window.location.pathname;
+            if (path.includes('/Form/Render/') || path.includes('/Form/SubmitAnswers/') || path.includes('/Form/View/')) {
+                config = formModalConfigs.find(c => c.form_id === pathFormId || c.form_id === String(pathFormId));
+            }
         }
+
+        // PRIORIDAD 4: Buscar por ID del HTML del formulario
+        if (!config && htmlFormId) {
+            config = formModalConfigs.find(c => c.form_id === htmlFormId || c.form_id === String(htmlFormId));
+        }
+
+        // PRIORIDAD 5: Buscar por hash (menos confiable)
+        if (!config && hashFormId) {
+            config = formModalConfigs.find(c => c.form_id === hashFormId || c.form_id === String(hashFormId));
+        }
+
+        // NO usar urlFormId directamente porque puede ser cualquier ID en la URL
+        // Solo usarlo como último recurso y solo si coincide con otros indicadores
+        // (esto previene falsos positivos cuando hay IDs en la URL que no son del formulario)
 
         if (config && config.message) {
             // Store the configuration to show after submission
@@ -406,20 +421,15 @@
             try {
                 const config = JSON.parse(pending);
 
-                // Check if we're on a form page
-                const currentPathFormId = extractFormIdFromPath();
-                const isFormPage = currentPathFormId && formModalConfigs.some(c =>
-                    c.form_id === currentPathFormId || c.form_id === String(currentPathFormId)
-                );
-
                 // Check if we're on an item page (ticket, etc.) after submit
+                // This is the ONLY case where we should show the modal from checkPendingModal
+                // because it means a form was submitted and we were redirected to the created item
                 const isItemPage = isItemPageAfterSubmit();
                 const itemId = extractItemIdFromUrl();
 
-                // Show modal if:
-                // 1. We're on an item page (ticket created) - this means form was submitted successfully
-                // 2. OR we're not on the form page anymore (redirected somewhere else)
-                if (isItemPage || !isFormPage) {
+                // Only show modal if we're on an item page (ticket created) with an ID
+                // This ensures we only show the modal after a successful form submission
+                if (isItemPage && itemId) {
                     sessionStorage.removeItem('formmodal_pending');
                     sessionStorage.removeItem('formmodal_current_config'); // Clean up
 
@@ -446,9 +456,24 @@
                             showFormModal(message);
                         }
                     };
-                    // Wait a bit longer if we're on an item page to let GLPI's notification appear first
-                    const delay = isItemPage ? 1500 : 300;
-                    setTimeout(showModal, delay);
+                    // Wait a bit longer to let GLPI's notification appear first
+                    setTimeout(showModal, 1500);
+                } else {
+                    // If we're not on an item page, check if we're on a valid form page
+                    // Only consider GLPI 11 form pages as valid
+                    const isFormPage = isValidFormPage() && (() => {
+                        const currentPathFormId = extractFormIdFromPath();
+                        return currentPathFormId && formModalConfigs.some(c =>
+                            c.form_id === currentPathFormId || c.form_id === String(currentPathFormId)
+                        );
+                    })();
+
+                    // If we're not on a valid form page and not on an item page, clean up pending
+                    // This prevents showing modals on random pages
+                    if (!isFormPage && !isItemPage) {
+                        sessionStorage.removeItem('formmodal_pending');
+                        sessionStorage.removeItem('formmodal_current_config');
+                    }
                 }
             } catch (e) {
                 sessionStorage.removeItem('formmodal_pending');
@@ -459,6 +484,12 @@
 
     // Initialize form listeners
     function initFormListeners() {
+        // ONLY set up listeners if we're on a valid GLPI 11 form page
+        // This prevents false positives from other pages
+        if (!isValidFormPage()) {
+            return;
+        }
+
         // Get current form ID from URL path
         const currentPathFormId = extractFormIdFromPath();
 
