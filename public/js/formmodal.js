@@ -209,6 +209,36 @@
         return urlParams.get('id');
     }
 
+    // Function to extract department/item name from ticket link innerHTML
+    // The name is in the innerHTML of the anchor link to the ticket
+    // @param {HTMLElement} ticketLink - Optional: the ticket link element (if already available)
+    function extractDepartmentNameFromSuccessMessage(ticketLink = null) {
+        let linkElement = ticketLink;
+
+        // If no link provided, search for it in the DOM
+        if (!linkElement) {
+            const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
+            if (ticketLinks.length > 0) {
+                linkElement = ticketLinks[0];
+            } else {
+                return null;
+            }
+        }
+
+        // Get the innerHTML of the ticket link
+        const innerHTML = linkElement.innerHTML || linkElement.textContent || '';
+        if (innerHTML) {
+            // Extract text after ":" if present, otherwise return the full innerHTML
+            const colonIndex = innerHTML.indexOf(':');
+            if (colonIndex !== -1 && colonIndex < innerHTML.length - 1) {
+                return innerHTML.substring(colonIndex + 1).trim();
+            }
+            return innerHTML.trim();
+        }
+
+        return null;
+    }
+
     // Function to setup MutationObserver to detect success messages
     function setupSuccessMessageObserver(config) {
         // Use provided config or get from sessionStorage
@@ -282,17 +312,25 @@
 
                     // Extract ticket ID from link if available
                     let ticketId = null;
+                    let ticketLinkElement = null;
                     if (ticketLinks.length > 0) {
-                        const href = ticketLinks[0].getAttribute('href');
+                        ticketLinkElement = ticketLinks[0];
+                        const href = ticketLinkElement.getAttribute('href');
                         const match = href.match(/id=(\d+)/);
                         if (match) {
                             ticketId = match[1];
                         }
                     }
 
+                    // Extract department name from ticket link innerHTML
+                    const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
+
                     let message = config.message;
                     if (ticketId) {
                         message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+                    }
+                    if (departmentName) {
+                        message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
                     }
 
                     // Wait a bit for GLPI's message to fully appear
@@ -324,13 +362,20 @@
                 clearInterval(intervalCheck);
                 observer.disconnect();
 
-                const href = ticketLinks[0].getAttribute('href');
+                const ticketLinkElement = ticketLinks[0];
+                const href = ticketLinkElement.getAttribute('href');
                 const match = href.match(/id=(\d+)/);
                 let ticketId = match ? match[1] : null;
+
+                // Extract department name from ticket link innerHTML
+                const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
 
                 let message = config.message;
                 if (ticketId) {
                     message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+                }
+                if (departmentName) {
+                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
                 }
 
                 setTimeout(() => {
@@ -379,9 +424,13 @@
                     sessionStorage.removeItem('formmodal_current_config'); // Clean up
 
                     // Replace placeholders in message if we have item ID
+                    const departmentName = extractDepartmentNameFromSuccessMessage();
                     let message = config.message;
                     if (itemId) {
                         message = message.replace(/\[ID_DE_INCIDENCIA\]/g, itemId);
+                    }
+                    if (departmentName) {
+                        message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
                     }
 
                     // Show modal after a short delay to ensure page is fully loaded
@@ -525,22 +574,34 @@
                                 // Method 4: Look in the DOM after a delay (GLPI might inject the message)
                                 const checkDOM = () => {
                                     setTimeout(() => {
+                                        let ticketLinkElement = null;
                                         if (!ticketId) {
                                             // Look for links to ticket.form.php in the page
                                             const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
                                             if (ticketLinks.length > 0) {
-                                                const href = ticketLinks[0].getAttribute('href');
+                                                ticketLinkElement = ticketLinks[0];
+                                                const href = ticketLinkElement.getAttribute('href');
                                                 const match = href.match(/id=(\d+)/);
                                                 if (match) {
                                                     ticketId = match[1];
                                                 }
                                             }
+                                        } else {
+                                            // If ticketId was already found, get the link element
+                                            const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
+                                            if (ticketLinks.length > 0) {
+                                                ticketLinkElement = ticketLinks[0];
+                                            }
                                         }
 
                                         // Show modal with ticket ID if found
+                                        const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
                                         let message = config.message;
                                         if (ticketId) {
                                             message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+                                        }
+                                        if (departmentName) {
+                                            message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
                                         }
 
                                         // Wait a bit for GLPI's success message to appear
@@ -555,8 +616,13 @@
                                 checkDOM();
                             }).catch(err => {
                                 // Show modal anyway without ticket ID
+                                const departmentName = extractDepartmentNameFromSuccessMessage();
+                                let message = config.message;
+                                if (departmentName) {
+                                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
+                                }
                                 setTimeout(() => {
-                                    showFormModal(config.message);
+                                    showFormModal(message);
                                     sessionStorage.removeItem('formmodal_pending');
                                     sessionStorage.removeItem('formmodal_current_config');
                                 }, 1500);
@@ -620,22 +686,34 @@
                             // Method 3: Look in the DOM after a delay (GLPI might inject the message)
                             setTimeout(() => {
                                 // Check if ticket ID was found in response, if not, try to find it in DOM
+                                let ticketLinkElement = null;
                                 if (!ticketId) {
                                     // Look for links to ticket.form.php in the page
                                     const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
                                     if (ticketLinks.length > 0) {
-                                        const href = ticketLinks[0].getAttribute('href');
+                                        ticketLinkElement = ticketLinks[0];
+                                        const href = ticketLinkElement.getAttribute('href');
                                         const match = href.match(/id=(\d+)/);
                                         if (match) {
                                             ticketId = match[1];
                                         }
                                     }
+                                } else {
+                                    // If ticketId was already found, get the link element
+                                    const ticketLinks = document.querySelectorAll('a[href*="ticket.form.php?id="]');
+                                    if (ticketLinks.length > 0) {
+                                        ticketLinkElement = ticketLinks[0];
+                                    }
                                 }
 
                                 // Show modal with ticket ID if found
+                                const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
                                 let message = config.message;
                                 if (ticketId) {
                                     message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+                                }
+                                if (departmentName) {
+                                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
                                 }
 
                                 // Wait a bit for GLPI's success message to appear
@@ -647,8 +725,13 @@
                             }, 500);
                         }).catch(err => {
                             // Show modal anyway without ticket ID
+                            const departmentName = extractDepartmentNameFromSuccessMessage();
+                            let message = config.message;
+                            if (departmentName) {
+                                message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
+                            }
                             setTimeout(() => {
-                                showFormModal(config.message);
+                                showFormModal(message);
                                 sessionStorage.removeItem('formmodal_pending');
                                 sessionStorage.removeItem('formmodal_current_config');
                             }, 1500);
