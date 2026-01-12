@@ -138,6 +138,43 @@
         return null;
     }
 
+    // Function to process message with replacements and special logic for ITT/IB departments
+    function processMessage(configMessage, ticketId, departmentName) {
+        // If department name contains "ITT" or "IB", use special message
+        if (departmentName && (departmentName.includes('ITT') || departmentName.includes('IB'))) {
+            let specialMessage = 'Contacte con la centralita para contactar con la <strong>[NOMBRE_DEPARTAMENTO]</strong>.';
+            // Replace department name in special message
+            specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
+            // Also replace ticket ID if available
+            if (ticketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            }
+            return specialMessage;
+        }
+
+        // If department name contains "Jefe/a de día o Supervisor/a de guardia", use special message
+        if (departmentName && (departmentName.includes('Jefe/a de día o Supervisor/a de guardia') || departmentName.includes('Jefe de día o Supervisor de guardia'))) {
+            let specialMessage = 'Esta incidencia debe ser tramitada por el <strong>[NOMBRE_DEPARTAMENTO]</strong> a través de la centralita para la <strong>Guardia de Microinformática</strong>.';
+            // Replace department name in special message
+            specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
+            // Also replace ticket ID if available
+            if (ticketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            }
+            return specialMessage;
+        }
+
+        // Otherwise, use the configured message with normal replacements
+        let message = configMessage;
+        if (ticketId) {
+            message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+        }
+        if (departmentName) {
+            message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
+        }
+        return message;
+    }
+
     // Function to check if form should trigger modal
     function checkFormSubmit(form) {
         // ONLY process if we're on a valid GLPI 11 form page
@@ -340,13 +377,8 @@
                     // Extract department name from ticket link innerHTML
                     const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
 
-                    let message = config.message;
-                    if (ticketId) {
-                        message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
-                    }
-                    if (departmentName) {
-                        message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                    }
+                    // Process message with replacements and special logic for ITT/IB
+                    const message = processMessage(config.message, ticketId, departmentName);
 
                     // Wait a bit for GLPI's message to fully appear
                     setTimeout(() => {
@@ -385,13 +417,8 @@
                 // Extract department name from ticket link innerHTML
                 const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
 
-                let message = config.message;
-                if (ticketId) {
-                    message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
-                }
-                if (departmentName) {
-                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                }
+                // Process message with replacements and special logic for ITT/IB
+                const message = processMessage(config.message, ticketId, departmentName);
 
                 setTimeout(() => {
                     showFormModal(message);
@@ -435,13 +462,8 @@
 
                     // Replace placeholders in message if we have item ID
                     const departmentName = extractDepartmentNameFromSuccessMessage();
-                    let message = config.message;
-                    if (itemId) {
-                        message = message.replace(/\[ID_DE_INCIDENCIA\]/g, itemId);
-                    }
-                    if (departmentName) {
-                        message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                    }
+                    // Process message with replacements and special logic for ITT/IB
+                    const message = processMessage(config.message, itemId, departmentName);
 
                     // Show modal after a short delay to ensure page is fully loaded
                     let attempts = 0;
@@ -627,13 +649,8 @@
 
                                         // Show modal with ticket ID if found
                                         const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
-                                        let message = config.message;
-                                        if (ticketId) {
-                                            message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
-                                        }
-                                        if (departmentName) {
-                                            message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                                        }
+                                        // Process message with replacements and special logic for ITT/IB
+                                        const message = processMessage(config.message, ticketId, departmentName);
 
                                         // Wait a bit for GLPI's success message to appear
                                         setTimeout(() => {
@@ -648,10 +665,8 @@
                             }).catch(err => {
                                 // Show modal anyway without ticket ID
                                 const departmentName = extractDepartmentNameFromSuccessMessage();
-                                let message = config.message;
-                                if (departmentName) {
-                                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                                }
+                                // Process message with replacements and special logic for ITT/IB
+                                const message = processMessage(config.message, null, departmentName);
                                 setTimeout(() => {
                                     showFormModal(message);
                                     sessionStorage.removeItem('formmodal_pending');
@@ -739,13 +754,8 @@
 
                                 // Show modal with ticket ID if found
                                 const departmentName = extractDepartmentNameFromSuccessMessage(ticketLinkElement);
-                                let message = config.message;
-                                if (ticketId) {
-                                    message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
-                                }
-                                if (departmentName) {
-                                    message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                                }
+                                // Process message with replacements and special logic for ITT/IB
+                                const message = processMessage(config.message, ticketId, departmentName);
 
                                 // Wait a bit for GLPI's success message to appear
                                 setTimeout(() => {
@@ -757,10 +767,8 @@
                         }).catch(err => {
                             // Show modal anyway without ticket ID
                             const departmentName = extractDepartmentNameFromSuccessMessage();
-                            let message = config.message;
-                            if (departmentName) {
-                                message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-                            }
+                            // Process message with replacements and special logic for ITT/IB
+                            const message = processMessage(config.message, null, departmentName);
                             setTimeout(() => {
                                 showFormModal(message);
                                 sessionStorage.removeItem('formmodal_pending');
