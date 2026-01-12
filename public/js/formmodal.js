@@ -387,11 +387,12 @@
     }
 
     // Function to check if we're on a ticket/item page after form submission
+    // NOTE: This function is kept for backward compatibility but should not be used
+    // since GLPI 11 forms stay on /Form/Render/[id] after submission
     function isItemPageAfterSubmit() {
-        const path = window.location.pathname;
-        // Check if we're on a ticket form page, or other item pages that might be created from forms
-        return path.includes('/front/ticket.form.php') ||
-            path.includes('/front/') && path.includes('.form.php');
+        // Always return false - we don't need to check for item pages
+        // because GLPI 11 forms stay on the same page after submission
+        return false;
     }
 
     // Function to show pending modal after page load (after redirect)
@@ -411,60 +412,21 @@
                     return;
                 }
 
-                // Only process if we're on a valid form page OR we're on an item page
-                // AND we came from a form submission (indicated by formUrl)
+                // ONLY process if we're on a /Form/Render/[id] page
+                // GLPI 11 forms stay on the same page after submission, so the observer will handle it
                 const isFormPage = isValidFormPage();
-                const isItemPage = isItemPageAfterSubmit();
-                const itemId = extractItemIdFromUrl();
 
-                // If we're on a form page, the observer will handle it
-                // Only show modal from checkPendingModal if we're on an item page after redirect
-                if (isFormPage) {
-                    // We're back on the form page, let the observer handle it
-                    // Don't show modal here
+                if (!isFormPage) {
+                    // We're not on a form page, clean up immediately
+                    // This prevents modals from appearing on pages like /front/ticket.php
+                    sessionStorage.removeItem('formmodal_pending');
+                    sessionStorage.removeItem('formmodal_current_config');
                     return;
                 }
 
-                // Only show modal if we're on an item page (ticket created) with an ID
-                // AND we have a valid formUrl that indicates we came from /Form/Render/[id]
-                if (isItemPage && itemId && pendingData.formUrl) {
-                    // Verify that the formUrl was actually /Form/Render/[id]
-                    const formUrlPath = new URL(pendingData.formUrl).pathname;
-                    if (formUrlPath.match(/\/Form\/Render\/(\d+)/)) {
-                        sessionStorage.removeItem('formmodal_pending');
-                        sessionStorage.removeItem('formmodal_current_config'); // Clean up
-
-                        const config = pendingData.config;
-                        // Replace placeholders in message if we have item ID
-                        const departmentName = extractDepartmentNameFromSuccessMessage();
-                        // Process message with replacements and special logic for ITT/IB
-                        const message = processMessage(config.message, itemId, departmentName);
-
-                        // Show modal after a short delay to ensure page is fully loaded
-                        let attempts = 0;
-                        const maxAttempts = 10;
-                        const showModal = () => {
-                            attempts++;
-                            if (document.body && document.body.offsetHeight > 0) {
-                                showFormModal(message);
-                            } else if (attempts < maxAttempts) {
-                                setTimeout(showModal, 200);
-                            } else {
-                                showFormModal(message);
-                            }
-                        };
-                        // Wait a bit longer to let GLPI's notification appear first
-                        setTimeout(showModal, 1500);
-                    } else {
-                        // formUrl is not valid or missing, clean up
-                        sessionStorage.removeItem('formmodal_pending');
-                        sessionStorage.removeItem('formmodal_current_config');
-                    }
-                } else {
-                    // We're not on a form page or item page, clean up
-                    sessionStorage.removeItem('formmodal_pending');
-                    sessionStorage.removeItem('formmodal_current_config');
-                }
+                // If we're on a form page, the observer will handle showing the modal
+                // We don't need to do anything here - just let the observer work
+                // The observer will detect the success message and show the modal
             } catch (e) {
                 sessionStorage.removeItem('formmodal_pending');
                 sessionStorage.removeItem('formmodal_current_config');
@@ -531,30 +493,23 @@
                     (typeof args[0] === 'object' && args[0].url && args[0].url.includes('SubmitAnswers'));
 
                 if (isSubmitAnswers) {
-                    // Get config from pending or current config
-                    let config = null;
-                    const pendingConfig = sessionStorage.getItem('formmodal_pending');
-                    const currentConfig = sessionStorage.getItem('formmodal_current_config');
-
-                    if (pendingConfig) {
-                        try {
-                            const pendingData = JSON.parse(pendingConfig);
-                            // Handle both old format (just config) and new format (with timestamp)
-                            config = pendingData.config || pendingData;
-                        } catch (e) {
-                            // Silently fail
-                        }
+                    // ONLY process if we're currently on a /Form/Render/[id] page
+                    // This prevents processing submissions from other pages like /front/ticket.php
+                    if (!isValidFormPage()) {
+                        return originalFetch.apply(this, args);
                     }
 
-                    if (!config && currentConfig) {
-                        try {
-                            config = JSON.parse(currentConfig);
-                        } catch (e) {
-                            // Silently fail
-                        }
+                    // Extract form ID from current page URL (must be /Form/Render/[id])
+                    const currentFormId = extractFormIdFromPath();
+                    if (!currentFormId) {
+                        return originalFetch.apply(this, args);
                     }
 
-                    // If we have a config, process the response
+                    // Find config for this form ID - MUST match the current page's form ID
+                    // Don't use sessionStorage here - only use configs that match the current page
+                    const config = formModalConfigs.find(c => c.form_id === currentFormId || c.form_id === String(currentFormId));
+
+                    // Only process if we have a config that matches the current page's form ID
                     if (config) {
                         return originalFetch.apply(this, args).then(response => {
                             // Clone response to read it without consuming it
@@ -655,7 +610,7 @@
                 if (args[0] && typeof args[0] === 'string') {
                     const url = args[0];
 
-                    // Only process if we're currently on a /Form/Render/[id] page
+                    // ONLY process if we're currently on a /Form/Render/[id] page
                     // This ensures we only handle submissions from valid form pages
                     if (!isValidFormPage()) {
                         return originalFetch.apply(this, args);
@@ -667,23 +622,14 @@
                         return originalFetch.apply(this, args);
                     }
 
-                    // Find config for this form ID
-                    let config = formModalConfigs.find(c => c.form_id === currentFormId || c.form_id === String(currentFormId));
+                    // Find config for this form ID - MUST match the current page's form ID
+                    const config = formModalConfigs.find(c => c.form_id === currentFormId || c.form_id === String(currentFormId));
 
-                    // If we don't have config from current page, try to get from sessionStorage
-                    if (!config) {
-                        const currentConfig = sessionStorage.getItem('formmodal_current_config');
-                        if (currentConfig) {
-                            try {
-                                config = JSON.parse(currentConfig);
-                            } catch (e) {
-                                // Silently fail
-                            }
-                        }
-                    }
-
-                    // Only process if it's a SubmitAnswers request and we have a config
-                    if (config && url.includes('/Form/SubmitAnswers')) {
+                    // Only process if:
+                    // 1. We have a config that matches the current page's form ID
+                    // 2. It's a SubmitAnswers request
+                    // 3. We're still on the same /Form/Render/[id] page
+                    if (config && url.includes('/Form/SubmitAnswers') && isValidFormPage()) {
                         // Clone response to read it without consuming it
                         const responseClone = response.clone();
 
@@ -809,12 +755,12 @@
         const currentUrl = window.location.href;
         if (currentUrl !== lastUrl) {
             lastUrl = currentUrl;
-            // Only check pending modal if we're on a valid form page or item page
-            // This prevents checking on random pages like ticket list views
-            if (isValidFormPage() || isItemPageAfterSubmit()) {
+            // Only check pending modal if we're on a valid form page (/Form/Render/[id])
+            // This prevents checking on random pages like /front/ticket.php
+            if (isValidFormPage()) {
                 setTimeout(() => checkPendingModal(), 300);
             } else {
-                // If we're not on a valid page, clean up any pending modals
+                // If we're not on a valid form page, clean up any pending modals immediately
                 sessionStorage.removeItem('formmodal_pending');
                 sessionStorage.removeItem('formmodal_current_config');
             }
