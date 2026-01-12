@@ -121,17 +121,18 @@
     }
 
     // Function to check if we're on a valid GLPI 11 form page
+    // ONLY /Form/Render/[id] is valid
     function isValidFormPage() {
         const path = window.location.pathname;
-        // Only valid URLs are /Form/Render/... or /Form/SubmitAnswers/... or /Form/View/...
-        return path.includes('/Form/Render/') || path.includes('/Form/SubmitAnswers/') || path.includes('/Form/View/');
+        // Only valid URL format: /Form/Render/[id]
+        return path.includes('/Form/Render/');
     }
 
     // Function to extract form ID from URL path (GLPI 11 Form Creator format: /Form/Render/36)
     function extractFormIdFromPath() {
         const path = window.location.pathname;
-        // Match patterns like /Form/Render/36 or /Form/SubmitAnswers/36
-        const match = path.match(/\/Form\/(?:Render|SubmitAnswers|View)\/(\d+)/);
+        // Only match /Form/Render/[id]
+        const match = path.match(/\/Form\/Render\/(\d+)/);
         if (match) {
             return match[1];
         }
@@ -177,74 +178,19 @@
 
     // Function to check if form should trigger modal
     function checkFormSubmit(form) {
-        // ONLY process if we're on a valid GLPI 11 form page
-        // This prevents false positives from other pages with IDs in the URL
+        // ONLY process if we're on /Form/Render/[id]
         if (!isValidFormPage()) {
             return;
         }
 
-        // Obtener IDs posibles del formulario
-        const htmlFormId = form.id || form.getAttribute('data-form-id') || form.getAttribute('name');
-
-        // Extraer ID de la ruta de la URL (GLPI 11 Form Creator: /Form/Render/36)
+        // Extract form ID from URL path: /Form/Render/[id]
         const pathFormId = extractFormIdFromPath();
-
-        // Obtener el ID del parámetro de URL (para formularios antiguos)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlFormId = urlParams.get('id');
-
-        // También buscar en el hash de la URL (algunos formularios usan #id)
-        const hashMatch = window.location.hash.match(/[#&]id=(\d+)/);
-        const hashFormId = hashMatch ? hashMatch[1] : null;
-
-        // Buscar configuración que coincida con el ID de la URL o el ID del HTML
-        let config = null;
-
-        // PRIORIDAD 1: Buscar en campos ocultos del formulario (más confiable)
-        // Para FormCreator específicamente, buscar en campos ocultos del formulario
-        const hiddenInputs = form.querySelectorAll('input[type="hidden"]');
-        for (let i = 0; i < hiddenInputs.length; i++) {
-            const input = hiddenInputs[i];
-            if (input.name === 'formcreator_form' || input.name === 'id' || input.name === 'form_id' || input.name === 'forms_id') {
-                const formId = input.value;
-                config = formModalConfigs.find(c => c.form_id === formId || c.form_id === String(formId));
-                if (config) break;
-            }
+        if (!pathFormId) {
+            return;
         }
 
-        // PRIORIDAD 2: Buscar por action URL (más confiable que URL genérica)
-        if (!config && form.action) {
-            const actionUrl = form.action;
-            // Extraer ID de la acción también (puede ser /Form/SubmitAnswers/36)
-            const actionMatch = actionUrl.match(/\/Form\/(?:SubmitAnswers|Render|View)\/(\d+)/);
-            if (actionMatch) {
-                const actionFormId = actionMatch[1];
-                config = formModalConfigs.find(c => c.form_id === actionFormId || c.form_id === String(actionFormId));
-            }
-        }
-
-        // PRIORIDAD 3: Buscar por ID de la ruta (GLPI 11 Form Creator - solo si es ruta de formulario)
-        if (!config && pathFormId) {
-            // Solo usar pathFormId si estamos en una ruta de formulario GLPI 11
-            const path = window.location.pathname;
-            if (path.includes('/Form/Render/') || path.includes('/Form/SubmitAnswers/') || path.includes('/Form/View/')) {
-                config = formModalConfigs.find(c => c.form_id === pathFormId || c.form_id === String(pathFormId));
-            }
-        }
-
-        // PRIORIDAD 4: Buscar por ID del HTML del formulario
-        if (!config && htmlFormId) {
-            config = formModalConfigs.find(c => c.form_id === htmlFormId || c.form_id === String(htmlFormId));
-        }
-
-        // PRIORIDAD 5: Buscar por hash (menos confiable)
-        if (!config && hashFormId) {
-            config = formModalConfigs.find(c => c.form_id === hashFormId || c.form_id === String(hashFormId));
-        }
-
-        // NO usar urlFormId directamente porque puede ser cualquier ID en la URL
-        // Solo usarlo como último recurso y solo si coincide con otros indicadores
-        // (esto previene falsos positivos cuando hay IDs en la URL que no son del formulario)
+        // Find configuration that matches the form ID from URL
+        const config = formModalConfigs.find(c => c.form_id === pathFormId || c.form_id === String(pathFormId));
 
         if (config && config.message) {
             // Store the configuration to show after submission with timestamp
@@ -480,11 +426,11 @@
                 }
 
                 // Only show modal if we're on an item page (ticket created) with an ID
-                // AND we have a valid formUrl that indicates we came from a form submission
+                // AND we have a valid formUrl that indicates we came from /Form/Render/[id]
                 if (isItemPage && itemId && pendingData.formUrl) {
-                    // Verify that the formUrl was actually a form page
+                    // Verify that the formUrl was actually /Form/Render/[id]
                     const formUrlPath = new URL(pendingData.formUrl).pathname;
-                    if (formUrlPath.includes('/Form/Render/')) {
+                    if (formUrlPath.match(/\/Form\/Render\/(\d+)/)) {
                         sessionStorage.removeItem('formmodal_pending');
                         sessionStorage.removeItem('formmodal_current_config'); // Clean up
 
@@ -709,15 +655,23 @@
                 if (args[0] && typeof args[0] === 'string') {
                     const url = args[0];
 
-                    // Extract form ID from fetch URL (GLPI 11 format: /Form/SubmitAnswers/36)
-                    const urlMatch = url.match(/\/Form\/(?:SubmitAnswers|Render|View)\/(\d+)/);
-                    let config = null;
+                    // Only process if we're currently on a /Form/Render/[id] page
+                    // This ensures we only handle submissions from valid form pages
+                    if (!isValidFormPage()) {
+                        return originalFetch.apply(this, args);
+                    }
 
-                    if (urlMatch) {
-                        const fetchFormId = urlMatch[1];
-                        config = formModalConfigs.find(c => c.form_id === fetchFormId || c.form_id === String(fetchFormId));
-                    } else if (url.includes('/Form/SubmitAnswers')) {
-                        // If it's a SubmitAnswers request, use the current config we stored
+                    // Extract form ID from current page URL (must be /Form/Render/[id])
+                    const currentFormId = extractFormIdFromPath();
+                    if (!currentFormId) {
+                        return originalFetch.apply(this, args);
+                    }
+
+                    // Find config for this form ID
+                    let config = formModalConfigs.find(c => c.form_id === currentFormId || c.form_id === String(currentFormId));
+
+                    // If we don't have config from current page, try to get from sessionStorage
+                    if (!config) {
                         const currentConfig = sessionStorage.getItem('formmodal_current_config');
                         if (currentConfig) {
                             try {
@@ -728,7 +682,7 @@
                         }
                     }
 
-                    // If we have a config and it's a SubmitAnswers request, show modal after response
+                    // Only process if it's a SubmitAnswers request and we have a config
                     if (config && url.includes('/Form/SubmitAnswers')) {
                         // Clone response to read it without consuming it
                         const responseClone = response.clone();
