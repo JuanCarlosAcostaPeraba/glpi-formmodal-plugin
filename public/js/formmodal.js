@@ -247,8 +247,14 @@
         // (esto previene falsos positivos cuando hay IDs en la URL que no son del formulario)
 
         if (config && config.message) {
-            // Store the configuration to show after submission
-            sessionStorage.setItem('formmodal_pending', JSON.stringify(config));
+            // Store the configuration to show after submission with timestamp
+            // This allows us to expire old pending modals
+            const pendingData = {
+                config: config,
+                timestamp: Date.now(),
+                formUrl: window.location.href
+            };
+            sessionStorage.setItem('formmodal_pending', JSON.stringify(pendingData));
 
             // Set up observer to detect when success message appears
             setupSuccessMessageObserver(config);
@@ -298,7 +304,9 @@
             const pending = sessionStorage.getItem('formmodal_pending');
             if (pending) {
                 try {
-                    config = JSON.parse(pending);
+                    const pendingData = JSON.parse(pending);
+                    // Handle both old format (just config) and new format (with timestamp)
+                    config = pendingData.config || pendingData;
                 } catch (e) {
                     return;
                 }
@@ -446,56 +454,70 @@
 
         if (pending) {
             try {
-                const config = JSON.parse(pending);
+                const pendingData = JSON.parse(pending);
 
-                // Check if we're on an item page (ticket, etc.) after submit
-                // This is the ONLY case where we should show the modal from checkPendingModal
-                // because it means a form was submitted and we were redirected to the created item
+                // Check if pending data is too old (more than 5 minutes)
+                // This prevents showing modals from old form submissions
+                const maxAge = 1 * 60 * 1000; // 1 minute in milliseconds
+                if (!pendingData.timestamp || (Date.now() - pendingData.timestamp) > maxAge) {
+                    sessionStorage.removeItem('formmodal_pending');
+                    sessionStorage.removeItem('formmodal_current_config');
+                    return;
+                }
+
+                // Only process if we're on a valid form page OR we're on an item page
+                // AND we came from a form submission (indicated by formUrl)
+                const isFormPage = isValidFormPage();
                 const isItemPage = isItemPageAfterSubmit();
                 const itemId = extractItemIdFromUrl();
 
+                // If we're on a form page, the observer will handle it
+                // Only show modal from checkPendingModal if we're on an item page after redirect
+                if (isFormPage) {
+                    // We're back on the form page, let the observer handle it
+                    // Don't show modal here
+                    return;
+                }
+
                 // Only show modal if we're on an item page (ticket created) with an ID
-                // This ensures we only show the modal after a successful form submission
-                if (isItemPage && itemId) {
-                    sessionStorage.removeItem('formmodal_pending');
-                    sessionStorage.removeItem('formmodal_current_config'); // Clean up
+                // AND we have a valid formUrl that indicates we came from a form submission
+                if (isItemPage && itemId && pendingData.formUrl) {
+                    // Verify that the formUrl was actually a form page
+                    const formUrlPath = new URL(pendingData.formUrl).pathname;
+                    if (formUrlPath.includes('/Form/Render/')) {
+                        sessionStorage.removeItem('formmodal_pending');
+                        sessionStorage.removeItem('formmodal_current_config'); // Clean up
 
-                    // Replace placeholders in message if we have item ID
-                    const departmentName = extractDepartmentNameFromSuccessMessage();
-                    // Process message with replacements and special logic for ITT/IB
-                    const message = processMessage(config.message, itemId, departmentName);
+                        const config = pendingData.config;
+                        // Replace placeholders in message if we have item ID
+                        const departmentName = extractDepartmentNameFromSuccessMessage();
+                        // Process message with replacements and special logic for ITT/IB
+                        const message = processMessage(config.message, itemId, departmentName);
 
-                    // Show modal after a short delay to ensure page is fully loaded
-                    let attempts = 0;
-                    const maxAttempts = 10;
-                    const showModal = () => {
-                        attempts++;
-                        if (document.body && document.body.offsetHeight > 0) {
-                            showFormModal(message);
-                        } else if (attempts < maxAttempts) {
-                            setTimeout(showModal, 200);
-                        } else {
-                            showFormModal(message);
-                        }
-                    };
-                    // Wait a bit longer to let GLPI's notification appear first
-                    setTimeout(showModal, 1500);
-                } else {
-                    // If we're not on an item page, check if we're on a valid form page
-                    // Only consider GLPI 11 form pages as valid
-                    const isFormPage = isValidFormPage() && (() => {
-                        const currentPathFormId = extractFormIdFromPath();
-                        return currentPathFormId && formModalConfigs.some(c =>
-                            c.form_id === currentPathFormId || c.form_id === String(currentPathFormId)
-                        );
-                    })();
-
-                    // If we're not on a valid form page and not on an item page, clean up pending
-                    // This prevents showing modals on random pages
-                    if (!isFormPage && !isItemPage) {
+                        // Show modal after a short delay to ensure page is fully loaded
+                        let attempts = 0;
+                        const maxAttempts = 10;
+                        const showModal = () => {
+                            attempts++;
+                            if (document.body && document.body.offsetHeight > 0) {
+                                showFormModal(message);
+                            } else if (attempts < maxAttempts) {
+                                setTimeout(showModal, 200);
+                            } else {
+                                showFormModal(message);
+                            }
+                        };
+                        // Wait a bit longer to let GLPI's notification appear first
+                        setTimeout(showModal, 1500);
+                    } else {
+                        // formUrl is not valid or missing, clean up
                         sessionStorage.removeItem('formmodal_pending');
                         sessionStorage.removeItem('formmodal_current_config');
                     }
+                } else {
+                    // We're not on a form page or item page, clean up
+                    sessionStorage.removeItem('formmodal_pending');
+                    sessionStorage.removeItem('formmodal_current_config');
                 }
             } catch (e) {
                 sessionStorage.removeItem('formmodal_pending');
@@ -570,7 +592,9 @@
 
                     if (pendingConfig) {
                         try {
-                            config = JSON.parse(pendingConfig);
+                            const pendingData = JSON.parse(pendingConfig);
+                            // Handle both old format (just config) and new format (with timestamp)
+                            config = pendingData.config || pendingData;
                         } catch (e) {
                             // Silently fail
                         }
@@ -824,12 +848,22 @@
     });
 
     // Monitor URL changes (for SPA navigation)
+    // BUT only check if we're on a valid form page or item page
+    // This prevents unnecessary checks on every page
     let lastUrl = window.location.href;
     setInterval(() => {
         const currentUrl = window.location.href;
         if (currentUrl !== lastUrl) {
             lastUrl = currentUrl;
-            setTimeout(() => checkPendingModal(), 300);
+            // Only check pending modal if we're on a valid form page or item page
+            // This prevents checking on random pages like ticket list views
+            if (isValidFormPage() || isItemPageAfterSubmit()) {
+                setTimeout(() => checkPendingModal(), 300);
+            } else {
+                // If we're not on a valid page, clean up any pending modals
+                sessionStorage.removeItem('formmodal_pending');
+                sessionStorage.removeItem('formmodal_current_config');
+            }
         }
     }, 500);
 
