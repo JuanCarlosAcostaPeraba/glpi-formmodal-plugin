@@ -390,4 +390,6 @@ class PluginFormmodalConfig extends CommonDBTM
         Html::closeForm();
         echo "</div>";
     }
+
+    // Hook onTicketAdd removed - using SQL trigger instead
 }

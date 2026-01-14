@@ -58,6 +58,9 @@ function plugin_init_formmodal()
 
         // Add config page
         $PLUGIN_HOOKS['config_page']['formmodal'] = 'front/config.form.php';
+
+        // Register hook to detect ticket creation from forms
+    // Hook removed - using SQL trigger instead
     }
 }
 
@@ -148,6 +151,26 @@ function plugin_formmodal_check_and_upgrade()
 
         $DB->doQuery($query);
     }
+
+    // Verificar si la tabla de modales pendientes existe
+    if (!$DB->tableExists('glpi_plugin_formmodal_pending')) {
+        $query = "CREATE TABLE IF NOT EXISTS `glpi_plugin_formmodal_pending` (
+            `id` int unsigned NOT NULL AUTO_INCREMENT,
+            `session_id` varchar(255) collate utf8mb4_unicode_ci NOT NULL,
+            `form_id` varchar(255) collate utf8mb4_unicode_ci NOT NULL,
+            `ticket_id` varchar(255) collate utf8mb4_unicode_ci DEFAULT NULL,
+            `department_name` varchar(255) collate utf8mb4_unicode_ci DEFAULT NULL,
+            `message` text collate utf8mb4_unicode_ci,
+            `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `shown` tinyint NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            KEY `session_id` (`session_id`),
+            KEY `shown` (`shown`),
+            KEY `created_at` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
+
+        $DB->doQuery($query);
+    }
 }
 
 /**
@@ -175,6 +198,26 @@ function plugin_formmodal_install()
         return false;
     }
 
+    // Crear tabla de modales pendientes
+    $query = "CREATE TABLE IF NOT EXISTS `glpi_plugin_formmodal_pending` (
+        `id` int unsigned NOT NULL AUTO_INCREMENT,
+        `session_id` varchar(255) collate utf8mb4_unicode_ci NOT NULL,
+        `form_id` varchar(255) collate utf8mb4_unicode_ci NOT NULL,
+        `ticket_id` varchar(255) collate utf8mb4_unicode_ci DEFAULT NULL,
+        `department_name` varchar(255) collate utf8mb4_unicode_ci DEFAULT NULL,
+        `message` text collate utf8mb4_unicode_ci,
+        `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `shown` tinyint NOT NULL DEFAULT 0,
+        PRIMARY KEY (`id`),
+        KEY `session_id` (`session_id`),
+        KEY `shown` (`shown`),
+        KEY `created_at` (`created_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;";
+
+    if (!$DB->doQuery($query)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -190,7 +233,8 @@ function plugin_formmodal_uninstall()
 
     // Drop plugin tables
     $tables = [
-        'glpi_plugin_formmodal_configs'
+        'glpi_plugin_formmodal_configs',
+        'glpi_plugin_formmodal_pending'
     ];
 
     foreach ($tables as $table) {
