@@ -88,7 +88,7 @@
     function processMessage(configMessage, ticketId, departmentName) {
         // If department name contains "ITT" or "IB", use special message
         if (departmentName && (departmentName.includes('ITT') || departmentName.includes('IB'))) {
-            let specialMessage = 'Contacte con la centralita para contactar con la <strong>[NOMBRE_DEPARTAMENTO]</strong>.';
+            let specialMessage = 'Llame al número <strong>34555</strong> para contactar con la <strong>[NOMBRE_DEPARTAMENTO]</strong>.';
             specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
             if (ticketId) {
                 specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
