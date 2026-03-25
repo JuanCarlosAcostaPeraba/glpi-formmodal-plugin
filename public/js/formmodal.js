@@ -97,7 +97,7 @@
         }
 
         // If department name contains "Jefe/a de día o Supervisor/a de guardia", use special message
-        if (departmentName && (departmentName.includes('Jefe/a de día o Supervisor/a de guardia') || departmentName.includes('Jefe de día o Supervisor de guardia'))) {
+        if (departmentName && (departmentName.includes('Jefe/a de día/noche o Supervisor/a de guardia') || departmentName.includes('Jefe de día/noche o Supervisor de guardia'))) {
             let specialMessage = 'Debe contactar con el <strong>[NOMBRE_DEPARTAMENTO]</strong> para que tramite la incidencia a la <strong>Guardia de Microinformática</strong> a través de la centralita.';
             specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
             if (ticketId) {

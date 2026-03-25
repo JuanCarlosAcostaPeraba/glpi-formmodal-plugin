@@ -50,7 +50,7 @@ BEGIN
         
         -- Only process if forms_forms_id is 49 (hardcoded - preproduction)
         -- NOTE: For production, change to: IF @formmodal_form_id = 46 THEN
-        IF @formmodal_form_id = 49 THEN
+        IF @formmodal_form_id = 70 THEN
             -- Get user_id from the answer set
             SET @formmodal_user_id = NULL;
             SELECT users_id INTO @formmodal_user_id
@@ -75,7 +75,7 @@ BEGIN
             END IF;
             
             -- Hardcoded message (can be customized in the PHP code)
-            SET @formmodal_message = '<p>Su incidencia ha sido registrada correctamente con el número <strong style="font-size: 20px;">#[ID_DE_INCIDENCIA]</strong>.</p><p>Para continuar con la gestión, llame a la centralita al <strong>34001</strong> o <strong>34002</strong> e indique el número de incidencia para que le transfieran con el departamento de <strong>[NOMBRE_DEPARTAMENTO]</strong>.</p>';
+            SET @formmodal_message = '<p>Su incidencia ha sido registrada correctamente con el número <strong style="font-size: 20px;">#[ID_DE_INCIDENCIA]</strong>.</p><p>Para continuar con la gestión, llame al <strong>34555</strong> e indique el número de incidencia para que le transfieran con el departamento de <strong>[NOMBRE_DEPARTAMENTO]</strong>.</p>';
             
             -- Clean old pending modals (older than 5 minutes)
             DELETE FROM glpi_plugin_formmodal_pending 
