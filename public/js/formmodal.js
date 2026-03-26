@@ -86,6 +86,13 @@
 
     // Function to process message with replacements and special logic
     function processMessage(configMessage, ticketId, departmentName) {
+        if (departmentName && departmentName.includes('Exclusivo')) {
+            let specialMessage = "Usted es el jefe de día/noche o supervisor de guardia y su id es <strong style='color:#e63946;font-weight:bold;font-size:1.4em;margin-left:0.5em;text-transform:uppercase;letter-spacing:2px;'>#[ID_DE_INCIDENCIA]</strong>, por favor llame al <strong>34555</strong> para contactar con la <strong>Guardia de Microinformática</strong>.";
+            if (ticketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            }
+            return specialMessage;
+        }
         // If department name contains "ITT" or "IB", use special message
         if (departmentName && (departmentName.includes('ITT') || departmentName.includes('IB'))) {
             let specialMessage = 'Llame al número <strong>34555</strong> para contactar con la <strong>[NOMBRE_DEPARTAMENTO]</strong>.';
