@@ -53,7 +53,7 @@ function plugin_init_formmodal()
         Plugin::registerClass('PluginFormmodalConfig');
 
         // Add JavaScript and CSS files
-        $PLUGIN_HOOKS['add_javascript']['formmodal'][] = 'public/js/formmodal.js';
+        $PLUGIN_HOOKS['add_javascript']['formmodal'][] = 'public/js/formmodal_v2.js';
         $PLUGIN_HOOKS['add_css']['formmodal'][] = 'public/css/formmodal.css';
 
         // Add config page
