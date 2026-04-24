@@ -86,10 +86,18 @@
 
     // Function to process message with replacements and special logic
     function processMessage(configMessage, ticketId, departmentName) {
+        let displayTicketId = ticketId;
+        if (ticketId && departmentName) {
+            // Eliminar "Guardia de " o "Guardia " para obtener la primera letra real del departamento
+            let cleanDeptName = departmentName.replace(/^Guardia\s+(de\s+)?/i, '').trim();
+            let prefix = cleanDeptName.charAt(0).toUpperCase();
+            displayTicketId = prefix + ticketId;
+        }
+
         if (departmentName && departmentName.includes('Exclusivo')) {
             let specialMessage = "Usted es el jefe de día/noche o supervisor de guardia y su id es <strong style='color:#e63946;font-weight:bold;font-size:1.4em;margin-left:0.5em;text-transform:uppercase;letter-spacing:2px;'>#[ID_DE_INCIDENCIA]</strong>, por favor llame al <strong>34555</strong> para contactar con la <strong>Guardia de Microinformática</strong>.";
-            if (ticketId) {
-                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            if (displayTicketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, displayTicketId);
             }
             return specialMessage;
         }
@@ -97,8 +105,8 @@
         if (departmentName && (departmentName.includes('ITT') || departmentName.includes('IB'))) {
             let specialMessage = 'Llame al número <strong>34555</strong> para contactar con la <strong>[NOMBRE_DEPARTAMENTO]</strong>.';
             specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-            if (ticketId) {
-                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            if (displayTicketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, displayTicketId);
             }
             return specialMessage;
         }
@@ -107,16 +115,16 @@
         if (departmentName && (departmentName.includes('Jefe/a de día/noche o Supervisor/a de guardia') || departmentName.includes('Jefe de día/noche o Supervisor de guardia'))) {
             let specialMessage = 'Debe contactar con el <strong>[NOMBRE_DEPARTAMENTO]</strong> para que tramite la incidencia a la <strong>Guardia de Microinformática</strong> a través de la centralita.';
             specialMessage = specialMessage.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
-            if (ticketId) {
-                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+            if (displayTicketId) {
+                specialMessage = specialMessage.replace(/\[ID_DE_INCIDENCIA\]/g, displayTicketId);
             }
             return specialMessage;
         }
 
         // Otherwise, use the configured message with normal replacements
         let message = configMessage;
-        if (ticketId) {
-            message = message.replace(/\[ID_DE_INCIDENCIA\]/g, ticketId);
+        if (displayTicketId) {
+            message = message.replace(/\[ID_DE_INCIDENCIA\]/g, displayTicketId);
         }
         if (departmentName) {
             message = message.replace(/\[NOMBRE_DEPARTAMENTO\]/g, departmentName);
