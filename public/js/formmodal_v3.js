@@ -91,6 +91,15 @@
             // Eliminar "Guardia de " o "Guardia " para obtener la primera letra real del departamento
             let cleanDeptName = departmentName.replace(/^Guardia\s+(de\s+)?/i, '').trim();
             let prefix = cleanDeptName.charAt(0).toUpperCase();
+
+            // Caso especial: Si contiene "Exclusivo" o se refiere a jefes/supervisores de guardia,
+            // el destino real es Microinformática, por lo que el prefijo debe ser "M".
+            if (departmentName.includes('Exclusivo') ||
+                departmentName.includes('Jefe') ||
+                departmentName.includes('Supervisor')) {
+                prefix = 'M';
+            }
+
             displayTicketId = prefix + ticketId;
         }
 
